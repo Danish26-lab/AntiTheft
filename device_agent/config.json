@@ -1,0 +1,7 @@
+{
+  "device_id": "Danish-windows",
+  "user_email": "admin@antitheft.com",
+  "report_interval": 15,
+  "check_commands_interval": 0.2,
+  "google_maps_api_key": "AIzaSyBjxyFqpY0PvAX6FrlKhWtRaZ0iLwD_Cnk"
+}

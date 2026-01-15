@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Connect iPhone - Anti-Theft System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #canvas {
+            display: none;
+        }
+        .scan-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            border: 3px solid #4CAF50;
+            border-radius: 15px;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .manual-entry {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .manual-entry label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .manual-entry input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        .manual-entry input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 10px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .instructions {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #666;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Connect Your iPhone</h1>
+        <p class="subtitle">Scan QR code or enter connection key</p>
+        
+        <div class="video-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="scan-overlay" id="overlay" style="display: none;"></div>
+        </div>
+        
+        <div class="status info" id="status">Click "Start Scanner" to begin</div>
+        
+        <button class="btn-primary" id="startBtn" onclick="startScanning()">📷 Start Scanner</button>
+        <button class="btn-secondary" id="stopBtn" onclick="stopScanning()" style="display: none;">⏹️ Stop Scanner</button>
+        
+        <div class="manual-entry">
+            <label>Or enter connection key manually:</label>
+            <input type="text" id="connectionKey" placeholder="Paste connection key here" />
+            <button class="btn-primary" onclick="connectManually()">✅ Connect Device</button>
+        </div>
+        
+        <div class="instructions">
+            <strong>Instructions:</strong>
+            <ol>
+                <li>Get the QR code from the web dashboard</li>
+                <li>Click "Start Scanner" and allow camera access</li>
+                <li>Point camera at QR code</li>
+                <li>Or copy/paste the connection key above</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        let stream = null;
+        let scanning = false;
+        const API_URL = 'http://192.168.0.19:5000/api'; // Your computer's IP address
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function startScanning() {
+            try {
+                updateStatus('Requesting camera access...', 'info');
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment'
+                    }
+                });
+                
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                await video.play();
+                
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'block';
+                
+                scanning = true;
+                updateStatus('Point camera at QR code...', 'info');
+                scanQR();
+            } catch (err) {
+                updateStatus('Camera access denied: ' + err.message, 'error');
+                console.error('Camera error:', err);
+            }
+        }
+        
+        function stopScanning() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            const video = document.getElementById('video');
+            video.srcObject = null;
+            
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            
+            scanning = false;
+            updateStatus('Scanner stopped', 'info');
+        }
+        
+        function scanQR() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    updateStatus('QR code detected! Connecting...', 'success');
+                    stopScanning();
+                    connectDevice(code.data);
+                }
+            }
+            
+            if (scanning) {
+                requestAnimationFrame(scanQR);
+            }
+        }
+        
+        async function connectDevice(connectionKey) {
+            if (!connectionKey) {
+                updateStatus('No connection key provided', 'error');
+                return;
+            }
+            
+            try {
+                updateStatus('Connecting device...', 'info');
+                
+                // Get device info
+                const deviceId = 'iphone-' + Date.now();
+                const deviceName = 'iPhone (' + new Date().toLocaleDateString() + ')';
+                
+                // Register device with connection key
+                const response = await fetch(`${API_URL}/register_device`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')
+                    },
+                    body: JSON.stringify({
+                        device_id: deviceId,
+                        name: deviceName,
+                        device_type: 'iphone',
+                        connection_key: connectionKey
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('✅ Device connected successfully!', 'success');
+                    
+                    // Auto-redirect after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'http://localhost:3000/devices';
+                    }, 2000);
+                } else {
+                    updateStatus('Error: ' + (data.error || 'Failed to connect'), 'error');
+                }
+            } catch (err) {
+                updateStatus('Network error: ' + err.message, 'error');
+                console.error('Connection error:', err);
+            }
+        }
+        
+        function connectManually() {
+            const key = document.getElementById('connectionKey').value.trim();
+            if (key) {
+                connectDevice(key);
+            } else {
+                updateStatus('Please enter a connection key', 'error');
+            }
+        }
+        
+        // Stop scanning when page unloads
+        window.addEventListener('beforeunload', stopScanning);
+    </script>
+</body>
+</html>
+

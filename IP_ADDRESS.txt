@@ -1,0 +1,18 @@
+Your Computer's IP Address: 192.168.0.19
+
+Use these URLs on your iPhone:
+
+QR Scanner Page:
+http://192.168.0.19:3000/qr-scanner
+
+Dashboard:
+http://192.168.0.19:3000
+
+Backend API:
+http://192.168.0.19:5000
+
+Make sure:
+- iPhone and computer are on the same WiFi network
+- Backend server is running (port 5000)
+- Frontend server is running (port 3000)
+
