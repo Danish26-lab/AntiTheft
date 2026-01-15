@@ -13,7 +13,7 @@ set "PROJECT_ROOT=%~dp0"
 cd /d "%PROJECT_ROOT%"
 
 echo Starting Backend Server...
-start "Backend Server" cmd /k "cd backend && python app.py"
+start "Backend Server" cmd /k "cd backend && set FLASK_APP=app.py && python app.py"
 
 timeout /t 3 /nobreak >nul
 

@@ -13,7 +13,12 @@ from routes.automation_routes import automation_bp
 from routes.wipe_routes import wipe_bp
 from utils.scheduler import init_scheduler
 
+# Create Flask app instance
 app = Flask(__name__)
+
+# Set FLASK_APP environment variable if not set (for flask CLI)
+if not os.environ.get('FLASK_APP'):
+    os.environ['FLASK_APP'] = 'app.py'
 
 # Disable Flask's instance folder to avoid path conflicts
 app.instance_path = None
@@ -79,9 +84,9 @@ with app.app_context():
         with engine.connect() as conn:
             conn.execute(db.text("PRAGMA journal_mode=WAL"))
             conn.commit()
-        print("✅ SQLite WAL mode enabled for better concurrency")
+        print("[OK] SQLite WAL mode enabled for better concurrency")
     except Exception as e:
-        print(f"⚠️  Could not enable WAL mode: {e}")
+        print(f"[WARN] Could not enable WAL mode: {e}")
 
 # Register blueprints
 app.register_blueprint(user_bp, url_prefix='/api')
