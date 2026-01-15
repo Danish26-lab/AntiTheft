@@ -117,6 +117,19 @@ if not is_serverless:
 else:
     print("[INFO] Skipping scheduler initialization (serverless environment)")
 
+@app.route('/')
+def root():
+    """Root endpoint"""
+    return {
+        'message': 'Anti-Theft System API',
+        'version': '1.0.0',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'api_base': '/api'
+        }
+    }, 200
+
 @app.route('/api/health')
 def health():
     """Health check endpoint"""
@@ -141,6 +154,10 @@ def health():
             'status': 'error',
             'message': str(e)
         }, 500
+
+# Export for Vercel serverless function
+# Vercel looks for 'app' or 'application' variable
+application = app
 
 if __name__ == '__main__':
     # Disable reloader on Windows to avoid database path issues

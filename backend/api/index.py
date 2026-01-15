@@ -14,13 +14,13 @@ os.environ['VERCEL'] = '1'
 # Handle both absolute and relative paths
 backend_dir = Path(__file__).parent.parent
 backend_path = str(backend_dir.resolve())
+
+# Add to Python path
 if backend_path not in sys.path:
     sys.path.insert(0, backend_path)
 
-# Also add current directory for imports
-current_dir = str(Path(__file__).parent.resolve())
-if current_dir not in sys.path:
-    sys.path.insert(0, current_dir)
+# Change working directory to backend for relative imports
+os.chdir(backend_path)
 
 try:
     # Import the Flask app instance
@@ -34,17 +34,29 @@ try:
     # Export both names for compatibility
     __all__ = ['app', 'application']
     
+    # Debug output (won't show in production but helpful for logs)
+    print(f"[VERCEL] Flask app loaded successfully from {backend_path}")
+    print(f"[VERCEL] App routes: {[str(rule) for rule in app.url_map.iter_rules()][:5]}...")
+    
 except Exception as e:
+    import traceback
+    error_details = traceback.format_exc()
+    print(f"[VERCEL ERROR] Failed to import Flask app: {e}")
+    print(f"[VERCEL ERROR] Traceback: {error_details}")
+    
     # If import fails, create a minimal error app
     from flask import Flask
     error_app = Flask(__name__)
     
+    @error_app.route('/', defaults={'path': ''})
     @error_app.route('/<path:path>')
     def error_handler(path):
         return {
             'error': 'Failed to initialize Flask app',
             'message': str(e),
-            'type': type(e).__name__
+            'type': type(e).__name__,
+            'path': path,
+            'sys_path': sys.path[:3]  # First 3 entries
         }, 500
     
     app = error_app
