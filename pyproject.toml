@@ -1,0 +1,11 @@
+[project]
+name = "antitheft-system"
+version = "1.0.0"
+description = "Anti-Theft System"
+requires-python = ">=3.8"
+
+[tool.uv]
+package = false
+
+[tool.vercel]
+build-command = ""

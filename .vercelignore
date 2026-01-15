@@ -22,3 +22,11 @@ ENV/
 start_all.*
 stop_all.*
 docs/
+backend/*.bat
+backend/migrate_*.py
+backend/check_*.py
+backend/link_*.py
+backend/test_*.py
+backend/README_*.md
+backend/api/
+pyproject.toml
