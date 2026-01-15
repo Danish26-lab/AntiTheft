@@ -1,11 +1,11 @@
+[tool.flask]
+app = "app:app"
+
 [project]
 name = "antitheft-backend"
 version = "1.0.0"
 description = "Anti-Theft System Backend API"
 requires-python = ">=3.8"
-
-[project.scripts]
-app = "app:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]
